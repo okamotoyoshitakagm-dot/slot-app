@@ -1,0 +1,97 @@
+<h1>{{ machine.name }} 詳細ページ</h1>
+
+<form method="POST">
+  <p>ユーザー名：{{ play.username }}</p>
+  <p>日付：{{ play.date }}</p>
+  <p>
+    開始G：{{ play.start_game }} /
+    終了G：
+    <input type="number" name="end_game" value="{{ play.end_game or '' }}">
+  </p>
+  <p>
+    総ゲーム数：
+    {% if play.end_game and play.start_game is not none %}
+      {% set total_games = play.end_game - play.start_game %}
+      {{ total_games }}
+    {% else %}
+      {% set total_games = None %}
+      -
+    {% endif %}
+  </p>
+  <p>
+    3枚役回数：
+    <input type="number" name="count1" value="{{ play.count1 or '' }}">
+    確率：
+    <input type="text" name="three_prob" value="{{ three_prob or '' }}" placeholder="例：1/14.3">
+  </p>
+
+  <p>
+    BB確率：
+    {% if bb_count and bb_count > 0 and total_games %}
+      {{ bb_count }}回 / 1/{{ '%.1f' % (total_games / bb_count) }}
+    {% else %}
+      - 回 / -
+    {% endif %}
+  </p>
+  <p>
+    RB確率：
+    {% if rb_count and rb_count > 0 and total_games %}
+      {{ rb_count }}回 / 1/{{ '%.1f' % (total_games / rb_count) }}
+    {% else %}
+      - 回 / -
+    {% endif %}
+  </p>
+
+  <button type="submit">判別する</button>
+</form>
+
+<hr>
+
+<h2>当たり登録</h2>
+<form method="POST" action="{{ url_for('disk_up_ultra.add_hit', slot_play_id=play.id) }}">
+  <p>
+    ゲーム数：
+    <input type="number" name="hit_game" required>
+    ボーナス種類：
+    <select name="bonus_type">
+      <option value="赤BB">赤BB</option>
+      <option value="白BB">白BB</option>
+      <option value="黒BB">黒BB</option>
+      <option value="RB">RB</option>
+    </select>
+    フラグ：
+    <select name="flag">
+      <option value="">-- 選択 --</option>
+      {% for f in ['リーチ目役 A1', 'リーチ目役 A2', 'リーチ目役 B1', 'リーチ目役 B2', 'リーチ目役 B3',
+                   'リーチ目役 C1', 'リーチ目役 C2', 'リーチ目役 C3',
+                   'リーチ目役 D1', 'リーチ目役 D2', 'リーチ目役 E', 'リーチ目役 F',
+                   'リーチ目役 G1', 'リーチ目役 G2', 'リーチ目役 T1', 'リーチ目役 T2', 'リーチ目役 T3'] %}
+        <option value="{{ f }}">{{ f }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">追加</button>
+  </p>
+</form>
+
+<hr>
+
+<h2>当たり一覧</h2>
+{% if hits and hits|length > 0 %}
+<table border="1">
+  <tr><th>ゲーム数</th><th>ボーナス種別</th><th>フラグ</th><th>操作</th></tr>
+  {% for hit in hits %}
+  <tr>
+    <td>{{ hit.hit_game }}</td>
+    <td>{{ hit.bonus_type }}</td>
+    <td>{{ hit.flag }}</td>
+    <td>
+      <form method="POST" action="{{ url_for('disk_up_ultra.delete_hit', hit_id=hit.id) }}" style="display:inline;">
+        <button type="submit" onclick="return confirm('削除してよろしいですか？')">削除</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>当たりはまだ登録されていません。</p>
+{% endif %}

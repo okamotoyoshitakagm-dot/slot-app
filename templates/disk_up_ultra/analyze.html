@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Disk Up Ultra 判別分析</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2em;
+      font-size: 1rem;
+    }
+
+    h2 {
+      border-bottom: 2px solid #444;
+      padding-bottom: 0.2em;
+      margin-top: 2em;
+      position: relative;
+      font-size: 1.25rem;
+    }
+
+    .icon {
+      display: inline-block;
+      width: 26px;
+      height: 26px;
+      text-align: center;
+      border-radius: 50%;
+      font-size: 14px;
+      cursor: pointer;
+      line-height: 26px;
+      margin-right: 0.4em;
+      flex-shrink: 0;
+    }
+
+    .icon-65 { background-color: #39f; color: #fff; }
+    .icon-95 { background-color: #f90; color: #fff; }
+    .info-icon { background-color: #ccc; color: #000; }
+
+    .popup {
+      display: none;
+      position: absolute;
+      top: 2.5em;
+      right: 0;
+      background: #fff;
+      border: 1px solid #999;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+      padding: 1em;
+      z-index: 10;
+      max-width: 95vw;
+      overflow-x: auto;
+    }
+
+    .popup table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 0.95rem;
+    }
+
+    .popup th, .popup td {
+      border: 1px solid #ccc;
+      padding: 0.3em 0.5em;
+      text-align: center;
+    }
+
+    .right-icons {
+      display: flex;
+      gap: 0.4em;
+      position: absolute;
+      right: 0;
+      top: 0;
+    }
+
+    .section {
+      margin-bottom: 2em;
+    }
+
+    .value {
+      font-weight: bold;
+      color: #222;
+    }
+
+    .sub {
+      margin-left: 1em;
+      font-size: 0.95em;
+      color: #555;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 1em;
+        font-size: 1rem;
+      }
+
+      h2 {
+        font-size: 1.1rem;
+      }
+
+      .icon {
+        width: 30px;
+        height: 30px;
+        font-size: 16px;
+        line-height: 30px;
+      }
+
+      .popup {
+        width: 90vw;
+        right: 0;
+        left: auto;
+        font-size: 0.95rem;
+      }
+    }
+  </style>
+</head>
+<body onclick="hideAllPopups(event)">
+
+<h1>Disk Up Ultra 判別分析</h1>
+<p>プレイID: {{ play.id }} / 総ゲーム数: {{ total_games }}G</p>
+
+<div class="section">
+  <h2>
+    ボーナス関連
+    <span class="right-icons">
+      <span class="icon icon-65" onclick="togglePopup('popup_bonus_65', event)">65</span>
+      <span class="icon icon-95" onclick="togglePopup('popup_bonus_95', event)">95</span>
+      <span class="info-icon icon" onclick="togglePopup('popup_bonus', event)">？</span>
+    </span>
+    <div id="popup_bonus" class="popup">
+      <table>
+        <tr><th>設定</th><th>RB</th><th>ボーナス合算</th></tr>
+        <tr><td>1</td><td>1/495.3</td><td>1/181.8</td></tr>
+        <tr><td>2</td><td>1/477.2</td><td>1/178.2</td></tr>
+        <tr><td>5</td><td>1/398.6</td><td>1/162.3</td></tr>
+        <tr><td>6</td><td>1/334.1</td><td>1/146.5</td></tr>
+      </table>
+    </div>
+   <div id="popup_bonus_65" class="popup">
+      <table>
+        <tr><th>設定</th><th>RB</th><th>ボーナス合算</th></tr>
+        {% for setting, row in trust_65.items() %}
+        <tr>
+          <td>{{ setting }}</td>
+          <td>{{ row["RB"] }}</td>
+          <td>{{ row["ボーナス合算"] }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+    <div id="popup_bonus_95" class="popup">
+      <table>
+        <tr><th>設定</th><th>RB</th><th>ボーナス合算</th></tr>
+        {% for setting, row in trust_95.items() %}
+        <tr>
+          <td>{{ setting }}</td>
+          <td>{{ row["RB"] }}</td>
+          <td>{{ row["ボーナス合算"] }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </h2>
+  <p>ボーナス合算：<span class="value">{{ rows[0].count }} 回（{{ rows[0].prob }}）</span></p>
+  <p>RB　　　　：<span class="value">{{ rows[1].count }} 回（{{ rows[1].prob }}）</span></p>
+</div>
+
+<div class="section">
+  <h2>
+    3枚役
+    <span class="right-icons">
+      <span class="icon icon-65" onclick="togglePopup('popup_three_65', event)">65</span>
+      <span class="icon icon-95" onclick="togglePopup('popup_three_95', event)">95</span>
+      <span class="info-icon icon" onclick="togglePopup('popup_three', event)">？</span>
+    </span>
+    <div id="popup_three" class="popup">
+      <table>
+        <tr><th>設定</th><th>3枚役</th></tr>
+        <tr><td>1</td><td>1/13.7</td></tr>
+        <tr><td>2</td><td>1/13.4</td></tr>
+        <tr><td>5</td><td>1/12.9</td></tr>
+        <tr><td>6</td><td>1/12.6</td></tr>
+      </table>
+    </div>
+    <div id="popup_three_65" class="popup">
+      <table>
+        <tr><th>設定</th><th>3枚役</th></tr>
+        {% for setting, row in trust_65.items() %}
+        <tr>
+          <td>{{ setting }}</td>
+          <td>{{ row["３枚役"] }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+    <div id="popup_three_95" class="popup">
+      <table>
+        <tr><th>設定</th><th>3枚役</th></tr>
+        {% for setting, row in trust_95.items() %}
+        <tr>
+          <td>{{ setting }}</td>
+          <td>{{ row["３枚役"] }}</td>
+        </tr>
+      {% endfor %}
+      </table>
+    </div>
+  </h2>
+<p>3枚役　　　：<span class="value">
+  {{ play.count1 if play.count1 is not none else 0 }} 回（
+  {% if play.count1 and play.count2 %}
+    1/{{ '%.1f' % (play.count2 / play.count1) }}
+  {% else %}
+    －
+  {% endif %}
+  ）</span></p>
+</div>
+
+<div class="section">
+  <h2>
+    リーチ目役
+    <span class="right-icons">
+      <span class="icon icon-65" onclick="togglePopup('popup_trust_65', event)">65</span>
+      <span class="icon icon-95" onclick="togglePopup('popup_trust_95', event)">95</span>
+      <span class="info-icon icon" onclick="togglePopup('popup_reach', event)">？</span>
+    </span>
+
+    <div id="popup_reach" class="popup">
+      <table>
+        <tr><th>設定</th><th>合算</th><th>A2</th><th>D2</th><th>G2</th><th>T2</th><th>T3</th></tr>
+        <tr><td>1</td><td>1/624.2</td><td>1/16384.0</td><td>1/2340.6</td><td>1/3276.8</td><td>1/1337.5</td><td>1/16384.0</td></tr>
+        <tr><td>2</td><td>1/595.8</td><td>1/13107.2</td><td>1/2259.9</td><td>1/3120.8</td><td>1/1310.7</td><td>1/13107.2</td></tr>
+        <tr><td>5</td><td>1/478.4</td><td>1/8192.0</td><td>1/1820.4</td><td>1/2730.7</td><td>1/1074.4</td><td>1/8192.0</td></tr>
+        <tr><td>6</td><td>1/383.3</td><td>1/5461.3</td><td>1/1560.4</td><td>1/2340.6</td><td>1/851.1</td><td>1/5461.3</td></tr>
+      </table>
+    </div>
+
+    <div id="popup_trust_65" class="popup">
+      <table>
+        <tr><th>設定</th><th>合算</th><th>A2</th><th>D2</th><th>G2</th><th>T2</th><th>T3</th></tr>
+        {% for setting, row in trust_65.items() %}
+        <tr>
+          <td>{{ setting }}</td>
+          <td>{{ row["合算"] }}</td>
+          <td>{{ row["A2"] }}</td>
+          <td>{{ row["D2"] }}</td>
+          <td>{{ row["G2"] }}</td>
+          <td>{{ row["T2"] }}</td>
+          <td>{{ row["T3"] }}</td>
+       </tr>
+        {% endfor %}
+      </table>
+    </div>
+
+    <div id="popup_trust_95" class="popup">
+      <table>
+        <tr><th>設定</th><th>合算</th><th>A2</th><th>D2</th><th>G2</th><th>T2</th><th>T3</th></tr>
+        {% for setting, row in trust_95.items() %}
+        <tr>
+          <td>{{ setting }}</td>
+          <td>{{ row["合算"] }}</td>
+          <td>{{ row["A2"] }}</td>
+          <td>{{ row["D2"] }}</td>
+          <td>{{ row["G2"] }}</td>
+          <td>{{ row["T2"] }}</td>
+          <td>{{ row["T3"] }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </h2>
+
+  <p>合算　　　：<span class="value">{{ rows[3].count }} 回（{{ rows[3].prob }}）</span></p>
+  <div class="sub">
+    <p>A2：{{ rows[4].count }} 回（{{ rows[4].prob }}）</p>
+    <p>D2：{{ rows[5].count }} 回（{{ rows[5].prob }}）</p>
+    <p>G2：{{ rows[6].count }} 回（{{ rows[6].prob }}）</p>
+    <p>T2：{{ rows[7].count }} 回（{{ rows[7].prob }}）</p>
+    <p>T3：{{ rows[8].count }} 回（{{ rows[8].prob }}）</p>
+  </div>
+</div>
+
+
+<div class="section">
+  <h2>
+    RB中の設定示唆
+    <span class="right-icons">
+      <span class="icon icon-65" onclick="togglePopup('popup_rbhint_65', event)">65</span>
+      <span class="icon icon-95" onclick="togglePopup('popup_rbhint_95', event)">95</span>
+      <span class="info-icon icon" onclick="togglePopup('popup_rbhint', event)">？</span>
+    </span>
+
+    <div id="popup_rbhint" class="popup">
+      <table>
+        <tr><th>設定</th><th>奇数</th><th>偶数</th><th>2以上</th><th>5以上</th><th>6濃厚</th></tr>
+        <tr><td>1</td><td>1/1.82</td><td>1/2.22</td><td>－</td><td>－</td><td>－</td></tr>
+        <tr><td>2</td><td>1/2.22</td><td>1/1.86</td><td>1/90.91</td><td>－</td><td>－</td></tr>
+        <tr><td>5</td><td>1/1.74</td><td>1/2.53</td><td>1/49.50</td><td>1/108.70</td><td>－</td></tr>
+        <tr><td>6</td><td>1/2.17</td><td>1/2.00</td><td>1/49.50</td><td>1/108.70</td><td>1/108.70</td></tr>
+      </table>
+    </div>
+
+    <div id="popup_rbhint_65" class="popup">
+      <table>
+        <tr><th>設定</th><th>奇数</th><th>偶数</th><th>2以上</th><th>5以上</th><th>6濃厚</th></tr>
+        {% for setting, row in trust_65_rbhint.items() %}
+        <tr>
+          <td>{{ setting }}</td>
+          <td>{{ row["奇数"] }}</td>
+          <td>{{ row["偶数"] }}</td>
+          <td>{{ row["2以上"] }}</td>
+          <td>{{ row["5以上"] }}</td>
+          <td>{{ row["6濃厚"] }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+
+    <div id="popup_rbhint_95" class="popup">
+      <table>
+        <tr><th>設定</th><th>奇数</th><th>偶数</th><th>2以上</th><th>5以上</th><th>6濃厚</th></tr>
+        {% for setting, row in trust_95_rbhint.items() %}
+        <tr>
+          <td>{{ setting }}</td>
+          <td>{{ row["奇数"] }}</td>
+          <td>{{ row["偶数"] }}</td>
+          <td>{{ row["2以上"] }}</td>
+          <td>{{ row["5以上"] }}</td>
+          <td>{{ row["6濃厚"] }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </h2>
+
+  <p>奇数示唆　：<span class="value">{{ rbhints["奇数"].count }} 回（{{ rbhints["奇数"].prob }}）</span></p>
+  <p>偶数示唆　：<span class="value">{{ rbhints["偶数"].count }} 回（{{ rbhints["偶数"].prob }}）</span></p>
+  <p>2以上示唆：<span class="value">{{ rbhints["2以上"].count }} 回（{{ rbhints["2以上"].prob }}）</span></p>
+  <p>5以上示唆：<span class="value">{{ rbhints["5以上"].count }} 回（{{ rbhints["5以上"].prob }}）</span></p>
+  <p>6濃厚　　：<span class="value">{{ rbhints["6濃厚"].count }} 回（{{ rbhints["6濃厚"].prob }}）</span></p>
+</div>
+
+
+
+
+
+
+
+<p><a href="{{ url_for('disk_up_ultra.play_detail', slot_play_id=play.id) }}">← プレイ画面に戻る</a></p>
+
+<script>
+  function togglePopup(id, event) {
+    event.stopPropagation();
+    hideAllPopups();
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'block';
+  }
+
+  function hideAllPopups() {
+    document.querySelectorAll('.popup').forEach(p => p.style.display = 'none');
+  }
+</script>
+
+</body>
+
+
+</html>

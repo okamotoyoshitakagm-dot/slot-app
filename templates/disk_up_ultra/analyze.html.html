@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>テスト</title>
+  <style>
+    body {
+      padding: 2em;
+      position: relative;
+    }
+    h2 {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .popup-button {
+      font-size: 0.9em;
+      padding: 0.4em;
+      background: #eef;
+      border: 1px solid #888;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .popup {
+      display: none;
+      position: absolute;
+      background: #fff;
+      border: 1px solid #888;
+      padding: 1em;
+      z-index: 100;
+      white-space: pre;
+    }
+  </style>
+</head>
+<body>
+
+<h2>
+  テスト見出し
+  <button class="popup-button" onclick="togglePopup(event, 'popup1')">確率表示</button>
+</h2>
+
+<div id="popup1" class="popup">
+テスト内容：  
+1：1/100  
+2：1/90  
+3：1/80  
+</div>
+
+<script>
+  function togglePopup(event, id) {
+    event.stopPropagation();
+    const popups = document.querySelectorAll('.popup');
+    popups.forEach(p => {
+      if (p.id === id) {
+        p.style.display = p.style.display === 'block' ? 'none' : 'block';
+        const rect = event.target.getBoundingClientRect();
+        p.style.top = (window.scrollY + rect.bottom + 5) + 'px';
+        p.style.left = rect.left + 'px';
+      } else {
+        p.style.display = 'none';
+      }
+    });
+  }
+  window.addEventListener('click', () => {
+    document.querySelectorAll('.popup').forEach(p => p.style.display = 'none');
+  });
+</script>
+
+</body>
+</html>

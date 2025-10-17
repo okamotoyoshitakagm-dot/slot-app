@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ machine.name }} 詳細ページ</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2em;
+      font-size: 1rem;
+    }
+
+    h1, h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1em;
+    }
+
+    form p {
+      margin-bottom: 1em;
+    }
+
+    input[type="number"],
+    input[type="text"],
+    select {
+      padding: 0.4em;
+      font-size: 1rem;
+      max-width: 100%;
+    }
+
+    button {
+      padding: 0.5em 1em;
+      font-size: 1rem;
+      margin-right: 0.5em;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 1rem;
+      margin-top: 1em;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 0.5em;
+      text-align: center;
+    }
+
+    a {
+      font-weight: bold;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 1em;
+        font-size: 0.95rem;
+      }
+
+      h1, h2 {
+        font-size: 1.2rem;
+      }
+
+      input[type="number"],
+      input[type="text"],
+      select {
+        width: 100%;
+        margin-top: 0.3em;
+        margin-bottom: 0.5em;
+      }
+
+      form p {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      button {
+        width: 100%;
+        margin-top: 0.5em;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>{{ machine.name }} 詳細ページ</h1>
+
+<form method="POST">
+  <p><strong>ユーザー名：</strong>{{ play.username }}</p>
+  <p><strong>日付：</strong>{{ play.date }}</p>
+
+  <!-- 開閉ボタン -->
+  <button type="button" id="toggleForm" onclick="toggleForm()">▽ 分析フォームを入力する</button>
+
+  <!-- 開閉対象フォーム -->
+  <div id="analyzeForm" style="display: none; margin-top: 1em;">
+    <p>
+      <strong>開始G：</strong>{{ play.start_game }} / <strong>終了G：</strong>
+      <input type="number" name="end_game" value="{{ play.end_game or '' }}">
+    </p>
+
+    <p>
+      <strong>総ゲーム数：</strong>
+      {% if play.end_game and play.start_game is not none %}
+        {% set total_games = play.end_game - play.start_game %}
+        {{ total_games }}
+      {% else %}
+        {% set total_games = None %}
+        -
+      {% endif %}
+    </p>
+
+    <p>
+      <strong>3枚役回数：</strong>
+      <input type="number" name="count1" value="{{ play.count1 or '' }}">
+      <strong>確率：</strong>
+<span>1/</span>
+<input type="number" name="three_prob"
+       value="{% if play.count1 and play.count2 %}{{ '%.2f' % (play.count2 / play.count1) }}{% else %}{{ three_prob or '' }}{% endif %}"
+       placeholder="分母を入力"
+       step="any" min="0" style="width: 6em;">
+
+
+    </p>
+  </div>
+
+  <p>
+    <strong>ボーナス確率：</strong>
+    {% set bonus_count = (bb_count or 0) + (rb_count or 0) %}
+    {% if bonus_count > 0 and total_games %}
+      {{ bonus_count }}回 / 1/{{ '%.1f' % (total_games / bonus_count) }}
+    {% else %}
+      - 回 / - 
+    {% endif %}
+  </p>
+
+  <p>
+    <strong>BB確率：</strong>
+    {% if bb_count and bb_count > 0 and total_games %}
+      {{ bb_count }}回 / 1/{{ '%.1f' % (total_games / bb_count) }}
+    {% else %}
+      - 回 / -
+    {% endif %}
+  </p>
+
+  <p>
+    <strong>RB確率：</strong>
+    {% if rb_count and rb_count > 0 and total_games %}
+      {{ rb_count }}回 / 1/{{ '%.1f' % (total_games / rb_count) }}
+    {% else %}
+      - 回 / -
+    {% endif %}
+  </p>
+
+  <p>
+    <button type="submit" name="action" value="analyze">分析画面へ</button>
+  </p>
+</form>
+
+<hr>
+
+<h2>当たり登録</h2>
+<form method="POST" action="{{ url_for('disk_up_ultra.add_hit', slot_play_id=play.id) }}">
+  <p>
+    <strong>ゲーム数：</strong>
+    <input type="number" name="hit_game" required>
+    <strong>ボーナス種類：</strong>
+    <select name="bonus_type">
+      <option value="赤BB">赤BB</option>
+      <option value="白BB">白BB</option>
+      <option value="黒BB">黒BB</option>
+      <option value="RB">RB</option>
+      <option value="異色BB">異色BB</option>
+    </select>
+    <strong>フラグ：</strong>
+    <select name="flag" id="flag-select">
+<option value="">-- 選択 --</option>
+{% for f in [
+    'リーチ目役 A1', 'リーチ目役 A2', 'リーチ目役 B1', 'リーチ目役 B2', 'リーチ目役 B3',
+    'リーチ目役 C1', 'リーチ目役 C2', 'リーチ目役 C3',
+    'リーチ目役 D1', 'リーチ目役 D2', 'リーチ目役 E', 'リーチ目役 F',
+    'リーチ目役 G1', 'リーチ目役 G2', 'リーチ目役 T1', 'リーチ目役 T2', 'リーチ目役 T3',
+    'ハズレ目 A', 'リプレイ B', '3枚役 C1', '3枚役 C2', 'チェリー D1', 'チェリー D2',
+    'スイカA E1', 'スイカB E2', 'フラグ無し'
+] %}
+  <option value="{{ f }}">{{ f }}</option>
+{% endfor %}
+    </select>
+    <button type="submit" id="add-button">追加</button>
+  </p>
+</form>
+
+<hr>
+
+<h2>当たり一覧</h2>
+{% if hits and hits|length > 0 %}
+  <div style="overflow-x: auto;">
+    <table>
+      <tr><th>ゲーム数</th><th>ボーナス種別</th><th>フラグ</th><th>設定示唆</th><th>操作</th></tr>
+      {% for hit in hits %}
+      <tr>
+        <td>{{ hit.hit_game }}</td>
+        <td>{{ hit.bonus_type }}</td>
+        <td>{{ hit.flag }}</td>
+        <td>
+          {% if hit.bonus_type == 'RB' %}
+          <form method="POST" action="{{ url_for('disk_up_ultra.update_text_1', hit_id=hit.id) }}">
+            <select name="text_1">
+              <option value="">選択</option>
+              <option value="奇数" {% if hit.text_1 == '奇数' %}selected{% endif %}>奇数</option>
+              <option value="偶数" {% if hit.text_1 == '偶数' %}selected{% endif %}>偶数</option>
+              <option value="2以上" {% if hit.text_1 == '2以上' %}selected{% endif %}>2以上</option>
+              <option value="5以上" {% if hit.text_1 == '5以上' %}selected{% endif %}>5以上</option>
+              <option value="6濃厚" {% if hit.text_1 == '6濃厚' %}selected{% endif %}>6濃厚</option>
+            </select>
+            <button type="submit">更新</button>
+          </form>
+          {% else %}
+          -
+          {% endif %}
+        </td>
+        <td>
+          <form method="POST" action="{{ url_for('disk_up_ultra.delete_hit', hit_id=hit.id) }}" style="display:inline;">
+            <button type="submit" onclick="return confirm('削除してよろしいですか？')">削除</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+{% else %}
+  <p>当たりはまだ登録されていません。</p>
+{% endif %}
+
+<hr>
+<p><a href="http://85.131.252.216/slot/">TOPに戻る</a></p>
+
+<!-- 開閉用スクリプト -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById('analyzeForm');
+  const btn = document.getElementById('toggleForm');
+
+  if (btn && form) {
+    btn.addEventListener("click", function () {
+      const isHidden = form.style.display === 'none';
+      form.style.display = isHidden ? 'block' : 'none';
+      btn.textContent = isHidden ? '△ 分析フォームを閉じる' : '▽ 分析フォームを入力する';
+    });
+  }
+
+  // フラグ未選択チェック
+  const addBtn = document.getElementById('add-button');
+  if (addBtn) {
+    addBtn.addEventListener('click', function (e) {
+      const flagSelect = document.getElementById('flag-select');
+      if (flagSelect && flagSelect.value === '') {
+        alert('フラグを選択してください');
+        e.preventDefault();
+      }
+    });
+  }
+});
+</script>
+
+</body>
+
+
+
+
+</html>

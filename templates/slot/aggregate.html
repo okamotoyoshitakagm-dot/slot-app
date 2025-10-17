@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>集計ページ</title>
+</head>
+<body>
+  <h1>📊 集計ページ</h1>
+
+  <!-- 条件フォーム -->
+  <form method="GET" action="{{ url_for('top.aggregate') }}">
+    <fieldset>
+      <legend>📌 集計条件を選択</legend>
+
+      <!-- 年 -->
+      <label for="year">年:</label>
+      <select name="year" id="year">
+        <option value="">--</option>
+        {% for y in years %}
+          <option value="{{ y }}" {% if y == request.args.get('year') %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+
+      <!-- 月 -->
+      <label for="month">月:</label>
+      <select name="month" id="month">
+        <option value="">--</option>
+        {% for m in months %}
+          <option value="{{ m }}" {% if m == request.args.get('month') %}selected{% endif %}>{{ m }}</option>
+        {% endfor %}
+      </select>
+
+      <!-- 店舗名 -->
+      <label for="shop">店舗:</label>
+      <select name="shop" id="shop">
+        <option value="">--</option>
+        {% for shop in shops %}
+          <option value="{{ shop }}" {% if shop == request.args.get('shop') %}selected{% endif %}>{{ shop }}</option>
+        {% endfor %}
+      </select>
+
+      <!-- ユーザー名 -->
+      <label for="username">ユーザー:</label>
+      <select name="username" id="username">
+        <option value="">--</option>
+        {% for user in usernames %}
+          <option value="{{ user }}" {% if user == request.args.get('username') %}selected{% endif %}>{{ user }}</option>
+        {% endfor %}
+      </select>
+
+      <!-- 機種名（必須） -->
+      <label for="machine">機種名（必須）:</label>
+      <select name="machine_id" id="machine" required>
+        <option value="">-- 選択 --</option>
+        {% for id, name in machines %}
+          <option value="{{ id }}" {% if id|string == request.args.get('machine_id') %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+
+      <!-- ボタン -->
+      <br><br>
+      <button type="submit" id="submit-btn" disabled>集計する</button>
+    </fieldset>
+  </form>
+
+  <!-- JS: 機種名選択時のみボタン活性化 -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const machineSelect = document.getElementById("machine");
+      const submitBtn = document.getElementById("submit-btn");
+
+      function toggleButton() {
+        submitBtn.disabled = !machineSelect.value;
+      }
+
+      machineSelect.addEventListener("change", toggleButton);
+      toggleButton(); // 初期状態の確認
+    });
+  </script>
+
+  <!-- 🔽 集計結果表示 -->
+  {% if result %}
+    <hr>
+    <h2>📝 集計結果</h2>
+    <p>📝 集計対象件数：{{ result.count_plays }} 件</p>
+    <p>🎰 総ゲーム数：{{ result.total_games }} G</p>
+    <p>💰 総差枚数：{{ result.total_difference }} 枚</p>
+
+    <h3>BB合算：{{ result.total_bb }}（{{ result.total_bb_rate }}）</h3>
+    <h3>RB合算：{{ result.total_rb }}（{{ result.total_rb_rate }}）</h3>
+
+    <table border="1" style="margin-top: 1em;">
+      <tr>
+        <th>フラグ</th>
+        <th>BB回数（確率）</th>
+        <th>RB回数（確率）</th>
+      </tr>
+      {% for row in result.flags %}
+      <tr>
+        <td>{{ row.name }}</td>
+        <td>{{ row.bb_count }}（{{ row.bb_rate }}）</td>
+        <td>{{ row.rb_count }}（{{ row.rb_rate }}）</td>
+      </tr>
+      {% endfor %}
+    </table>
+  {% endif %}
+
+  <!-- ✅ デバッグ情報の表示 -->
+  {% if debug_info %}
+    <hr>
+    <h2>🧪 デバッグ情報</h2>
+    <p>選択中の machine_id: {{ debug_info.selected_machine_id }}</p>
+    <p>SlotPlay 件数: {{ debug_info.slot_plays_count }}</p>
+    <pre>
+    {% for p in debug_info.slot_plays %}
+      ID: {{ p.id }}, 日付: {{ p.date }}, ユーザー: {{ p.username }}, 機種ID: {{ p.machine_id }}
+    {% endfor %}
+    </pre>
+  {% endif %}
+
+  <!-- 戻るリンク -->
+  <div style="margin-top: 2em;">
+    <a href="{{ url_for('top.index') }}">
+      <button type="button">🔙 戻る</button>
+    </a>
+  </div>
+</body>
+</html>
