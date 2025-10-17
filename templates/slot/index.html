@@ -182,9 +182,9 @@
           <form method="POST" action="{{ url_for('top.update_play', slot_play_id=play.id) }}">
             <select name="shop_name">
               <option value="">--</option>
+              <option value="国分寺モナコ" {% if play.shop_name == '国分寺モナコ' %}selected{% endif %}>国分寺モナコ</option>
+              <option value="スパークルV" {% if play.shop_name == 'スパークルV' %}selected{% endif %}>スパークルV</option>
               <option value="キコーナ府中" {% if play.shop_name == 'キコーナ府中' %}selected{% endif %}>キコーナ府中</option>
-              <option value="国分寺モナコ" {% if play.shop_name == '国分寺モナコ' %}se4lected{% endif %}>国分寺モナコ</option>
-              <option value="スパークル" {% if play.shop_name == 'スパークル' %}selected{% endif %}>スパークル</option>
             </select>
         </td>
         <td>
